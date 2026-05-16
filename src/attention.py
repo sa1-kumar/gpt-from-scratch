@@ -159,3 +159,25 @@ class TransformerBlock(nn.Module):
         x = x + self.ffn(self.ln2(x))
 
         return x, weights
+    
+class SinusoidalPositionalEncoding(nn.Module):
+    def __init__(self, d_model: int, max_seq_len: int = 512):
+        super().__init__()
+        
+        # Build the encoding matrix once [max_seq_len, d_model]
+        pe  = torch.zeros(max_seq_len, d_model)
+        pos = torch.arange(0, max_seq_len).unsqueeze(1)          # [T, 1]
+        div = torch.exp(
+            torch.arange(0, d_model, 2) * 
+            -(math.log(10000.0) / d_model)
+        )                                                          # [d_model/2]
+        
+        pe[:, 0::2] = torch.sin(pos * div)   # even dims
+        pe[:, 1::2] = torch.cos(pos * div)   # odd dims
+        
+        # Register as buffer — saved with model but not a parameter
+        self.register_buffer('pe', pe.unsqueeze(0))               # [1, T, d_model]
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # x: [B, T, d_model]
+        return x + self.pe[:, :x.size(1), :]

@@ -8,3 +8,6 @@ data/
 .DS_Store
 .env
 wandb/
+
+# Claude Code internals
+.claude/
